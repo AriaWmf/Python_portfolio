@@ -1,0 +1,50 @@
+import string 
+import re
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+
+#remove punctuation
+clean_news = headlines2['TITLE'].str.replace('[{}]'.format(string.punctuation), ' ')
+
+# remove word 'tesla'
+clean_news = clean_news.str.replace('tesla', '')
+
+# remove stopwords
+stop_words = stopwords.words('english')
+clean_news = clean_news.apply(lambda x: ' '.join([word for word in x.split() if word not in (stop_words) and len(word)>3]))
+
+# remove numbers in text
+clean_news = clean_news.apply(lambda x: ' '.join([i for i in x.split() if not i.isdigit()]))
+
+# stem words
+porter = PorterStemmer()
+clean_news = clean_news.apply(lambda x: ' '.join([porter.stem(word) for word in x.split()]))
+
+# associate news with date
+clean_news = pd.concat([clean_news,pd.to_datetime(headlines2['DATE'])],axis=1)
+
+# keep only news post 2015
+clean_news = clean_news[clean_news['DATE'] >= pd.Timestamp(2014, 1, 21)]
+
+# plot time-series count of news publications by date 
+temp = clean_news.groupby('DATE').count()
+ax = temp.plot(color='green',alpha=0.6,figsize=(15,5),lw=1, title='Count of News Publications by Date',legend=False)
+ax.set_ylabel("Count of News Publications")
+ax.set_xlabel("Date")
+
+
+# concate news that occur in the same day 
+news_date = pd.DataFrame(columns = ['TITLE','DATE'])
+
+unique_dates = clean_news['DATE'].unique()
+
+for date in unique_dates:
+    day_headlines = ''.join(clean_news['TITLE'][clean_news['DATE']== date])
+    news_date = news_date.append(pd.DataFrame.from_dict({'TITLE':[day_headlines],'DATE':[date]}))
+    
+news_date = news_date.reset_index(drop=True)
+
+# drop news not published on trading day/ no stock data
+
+news_date = news_date[news_date['DATE'].apply(lambda x: x in binary_ret.index)].reset_index(drop=True)
+
