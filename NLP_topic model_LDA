@@ -1,0 +1,103 @@
+from nltk import word_tokenize,sent_tokenize # tokenizing
+from nltk.stem import PorterStemmer,LancasterStemmer  # using the Porter Stemmer and Lancaster Stemmer and others
+from nltk.stem.snowball import SnowballStemmer
+from nltk.stem import WordNetLemmatizer 
+from nltk.stem.snowball import SnowballStemmer
+from nltk.stem import WordNetLemmatizer  # lammatizer from WordNet
+
+# for named entity recognition (NER)
+from nltk import ne_chunk
+
+# vectorizers for creating the document-term-matrix (DTM)
+from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
+
+news_data = pd.read_csv('news_date.csv')
+news_data = pd.DataFrame(news_data)
+
+news_data.head()
+df = news_data.copy()
+
+#preprocessing
+from nltk.corpus import stopwords  #stopwords
+from nltk import word_tokenize,sent_tokenize # tokenizing
+from nltk.stem import PorterStemmer,LancasterStemmer  # using the Porter Stemmer and Lancaster Stemmer and others
+from nltk.stem.snowball import SnowballStemmer
+from nltk.stem import WordNetLemmatizer 
+from nltk.stem.snowball import SnowballStemmer
+from nltk.stem import WordNetLemmatizer  # lammatizer from WordNet
+
+# for named entity recognition (NER)
+from nltk import ne_chunk
+
+# vectorizers for creating the document-term-matrix (DTM)
+from sklearn.feature_extraction.text import TfidfVectorizer,CountVectorizer
+
+#stop-words
+stop_words=set(nltk.corpus.stopwords.words('english'))
+
+#### extract features and create DTM with TF-IDF values 
+vect =TfidfVectorizer(stop_words=stop_words,max_features=1000)
+vect_text=vect.fit_transform(df['TITLE'])
+idf=vect.idf_
+dd=dict(zip(vect.get_feature_names(), idf))
+l=sorted(dd, key=(dd).get)
+
+
+#### Latent Dirichlet Allocation (LDA)
+
+
+from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.model_selection import GridSearchCV
+# Define Search Param
+search_params = {'n_components': [5, 6, 7, 8], 'learning_decay': [0.3,.5, .7, .9]}
+
+lda = LatentDirichletAllocation()
+
+###MODEL PART
+
+model = GridSearchCV(lda, param_grid=search_params)
+model.fit(vect_text)
+
+# Best Model
+best_lda_model = model.best_estimator_
+
+# Model Parameters
+print("Best Model's Params: ", model.best_params_)
+
+# Log Likelihood Score
+print("Best Log Likelihood Score: ", model.best_score_)
+
+# Perplexity
+print("Model Perplexity: ", best_lda_model.perplexity(vect_text))
+
+
+## optimal parameter
+lda_model=LatentDirichletAllocation(n_components=5,learning_decay = 0.9,
+                                    learning_method='online',random_state=0,max_iter=10) 
+lda_top=lda_model.fit_transform(vect_text)
+
+# extract
+# Best Model
+best_lda_model = model.best_estimator_
+
+# Model Parameters
+print("Best Model's Params: ", model.best_params_)
+
+# Log Likelihood Score
+print("Best Log Likelihood Score: ", model.best_score_)
+
+# Perplexity
+print("Model Perplexity: ", best_lda_model.perplexity(vect_text))
+
+###fit mode
+lda_model=LatentDirichletAllocation(n_components=5,learning_decay = 0.9,
+                                    learning_method='online',random_state=0,max_iter=10) 
+lda_top=lda_model.fit_transform(vect_text)
+
+#composition of doc {j} for eg
+j = 1
+print("Document {}: ".format(j))
+for i,topic in enumerate(lda_top[j]):
+  print("Topic ",i,": ",topic*100,"%")
+  
+  
